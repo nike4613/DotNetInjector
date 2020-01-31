@@ -20,6 +20,7 @@ namespace LoadBins
             if (File.Exists(path) && (ext == ".dll" || ext == ".exe"))
             {
                 var assem = Assembly.LoadFrom(path);
+                if (assem == Assembly.GetExecutingAssembly()) return (Array.Empty<MethodInfo>(), Array.Empty<MethodInfo>());
 
                 if (assem.EntryPoint != null) return (new[] { assem.EntryPoint }, Array.Empty<MethodInfo>());
                 else
