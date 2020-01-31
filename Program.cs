@@ -16,7 +16,8 @@ namespace LoadBins
     {
         private static (IEnumerable<MethodInfo> entryPoints, IEnumerable<MethodInfo> mods) TryLoad(string path)
         {
-            if (File.Exists(path))
+            var ext = Path.GetExtension(path).ToLower();
+            if (File.Exists(path) && (ext == ".dll" || ext == ".exe"))
             {
                 var assem = Assembly.LoadFrom(path);
 
