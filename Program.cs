@@ -63,17 +63,16 @@ namespace LoadBins
                 }
             }
 
-            var finalArgs = entryArgs.ToArray();
             foreach (var pre in preEntry)
             {
                 var param = new List<object>();
 
                 foreach (var p in pre.GetParameters())
                 {
-                    if (p.ParameterType == typeof(string[]))
-                        param.Add(finalArgs);
-                    else if (p.ParameterType == typeof(List<MethodInfo>))
+                    if (p.ParameterType == typeof(List<MethodInfo>))
                         param.Add(entries);
+                    else if (p.ParameterType == typeof(List<string>))
+                        param.Add(entryArgs);
                     else if (p.ParameterType.IsValueType)
                         param.Add(Activator.CreateInstance(p.ParameterType));
                     else
@@ -82,6 +81,8 @@ namespace LoadBins
 
                 pre.Invoke(null, param.ToArray());
             }
+
+            var finalArgs = entryArgs.ToArray();
 
             foreach (var m in entries)
             {
