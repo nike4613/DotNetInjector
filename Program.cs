@@ -14,7 +14,40 @@ namespace LoadBins
 
     class Program
     {
-        [MTAThread]
+        private static (IEnumerable<MethodInfo> entryPoints, IEnumerable<MethodInfo> mods) TryLoad(string path)
+        {
+            if (File.Exists(path))
+            {
+                var assem = Assembly.LoadFrom(path);
+
+                if (assem.EntryPoint != null) return (new[] { assem.EntryPoint }, Array.Empty<MethodInfo>());
+                else
+                {
+                    Type[] types;
+                    try
+                    {
+                        types = assem.GetTypes();
+                    }
+                    catch (ReflectionTypeLoadException e)
+                    {
+                        types = e.Types;
+                    }
+
+                    return (Array.Empty<MethodInfo>(), 
+                        types.Where(t => t.GetCustomAttribute<PluginAttribute>() != null)
+                             .SelectMany(t => t.GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic))
+                             .Where(m => m.GetCustomAttribute<PluginAttribute>() != null));
+                }
+            }
+            else if (Directory.Exists(path))
+            {
+                return Directory.EnumerateFileSystemEntries(path).Select(TryLoad)
+                    .Aggregate((a, b) => (a.entryPoints.Concat(b.entryPoints), a.mods.Concat(b.mods)));
+            }
+            else
+                return (Array.Empty<MethodInfo>(), Array.Empty<MethodInfo>());
+        }
+
         static void Main(string[] args)
         {
             var entries = new List<MethodInfo>();
@@ -31,35 +64,9 @@ namespace LoadBins
 
                 if (!done)
                 {
-                    if (File.Exists(assems))
-                    {
-                        var assem = Assembly.LoadFrom(assems);
-
-                        if (assem.EntryPoint != null) entries.Add(assem.EntryPoint);
-                        else
-                        {
-                            Type[] types;
-                            try
-                            {
-                                types = assem.GetTypes();
-                            }
-                            catch (ReflectionTypeLoadException e)
-                            {
-                                types = e.Types;
-                            }
-
-                            foreach (var type in types
-                                .Where(t => t.GetCustomAttribute<PluginAttribute>() != null))
-                            {
-                                preEntry.AddRange(type.GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)
-                                    .Where(m => m.GetCustomAttribute<PluginAttribute>() != null));
-                            }
-                        }
-                    }
-                }
-                else
-                {
-                    entryArgs.Add(assems);
+                    var (entry, mods) = TryLoad(assems);
+                    entries.AddRange(entry);
+                    preEntry.AddRange(mods);
                 }
             }
 
