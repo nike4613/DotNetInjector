@@ -36,7 +36,8 @@ namespace LoadBins
                     }
 
                     return (Array.Empty<MethodInfo>(), 
-                        types.Where(t => t.GetCustomAttribute<PluginAttribute>() != null)
+                        types.Where(t => t != null)
+                             .Where(t => t.GetCustomAttribute<PluginAttribute>() != null)
                              .SelectMany(t => t.GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic))
                              .Where(m => m.GetCustomAttribute<PluginAttribute>() != null));
                 }
