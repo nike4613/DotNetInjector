@@ -20,9 +20,9 @@ namespace LoadBins
             if (File.Exists(path) && (ext == ".dll" || ext == ".exe"))
             {
                 var assem = Assembly.LoadFrom(path);
-                if (assem == Assembly.GetExecutingAssembly()) return (Array.Empty<MethodInfo>(), Array.Empty<MethodInfo>());
+                if (assem == Assembly.GetExecutingAssembly()) return (Enumerable.Empty<MethodInfo>(), Enumerable.Empty<MethodInfo>());
 
-                if (assem.EntryPoint != null) return (new[] { assem.EntryPoint }, Array.Empty<MethodInfo>());
+                if (assem.EntryPoint != null) return (new[] { assem.EntryPoint }, Enumerable.Empty<MethodInfo>());
                 else
                 {
                     Type[] types;
@@ -35,7 +35,7 @@ namespace LoadBins
                         types = e.Types;
                     }
 
-                    return (Array.Empty<MethodInfo>(), 
+                    return (Enumerable.Empty<MethodInfo>(), 
                         types.Where(t => t != null)
                              .Where(t => t.GetCustomAttribute<PluginAttribute>() != null)
                              .SelectMany(t => t.GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic))
@@ -45,10 +45,11 @@ namespace LoadBins
             else if (Directory.Exists(path))
             {
                 return Directory.EnumerateFileSystemEntries(path).Select(TryLoad)
+                    .DefaultIfEmpty((Array.Empty<MethodInfo>(), Array.Empty<MethodInfo>()))
                     .Aggregate((a, b) => (a.entryPoints.Concat(b.entryPoints), a.mods.Concat(b.mods)));
             }
             else
-                return (Array.Empty<MethodInfo>(), Array.Empty<MethodInfo>());
+                return (Enumerable.Empty<MethodInfo>(), Enumerable.Empty<MethodInfo>());
         }
 
         static void Main(string[] args)
